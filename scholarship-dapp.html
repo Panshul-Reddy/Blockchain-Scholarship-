@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScholarChain — Decentralized Scholarship System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+<style>
+:root,[data-theme="dark"]{
+--bg:#0d1117;--surface:#161b22;--surface2:#21262d;--surfoff:#30363d;
+--border:#30363d;--divider:#21262d;
+--text:#e6edf3;--muted:#8b949e;--faint:#484f58;
+--green:#238636;--green-h:#2ea043;--green-l:#1a3a24;
+--blue:#1f6feb;--blue-h:#388bfd;--blue-l:#0d2847;
+--warn:#d29922;--warn-l:#2d2208;
+--err:#f85149;--err-l:#2d1117;
+--purple:#8957e5;--purple-l:#1e1535;
+--teal:#39d353;
+--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+--r-sm:0.375rem;--r-md:0.5rem;--r-lg:0.75rem;--r-xl:1rem;--r-full:9999px;
+}
+[data-theme="light"]{
+--bg:#f6f8fa;--surface:#fff;--surface2:#f6f8fa;--surfoff:#eaeef2;
+--border:#d0d7de;--divider:#eaeef2;
+--text:#1f2328;--muted:#636c76;--faint:#9198a1;
+--green:#1a7f37;--green-h:#1f8f3f;--green-l:#dafbe1;
+--blue:#0969da;--blue-h:#0860ca;--blue-l:#ddf4ff;
+--warn:#9a6700;--warn-l:#fff8c5;
+--err:#d1242f;--err-l:#ffebe9;
+--purple:#8250df;--purple-l:#fbefff;
+--teal:#1a7f37;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
+body{min-height:100dvh;font-family:var(--font);font-size:1rem;color:var(--text);background:var(--bg);display:grid;grid-template-columns:260px 1fr;grid-template-rows:56px 1fr;}
+input,button,select{font:inherit;color:inherit;}
+button{cursor:pointer;background:none;border:none;}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;}
+
+/* TOPBAR */
+.topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:0.5rem;font-weight:700;font-size:0.95rem;}
+.logo svg{width:28px;height:28px;}
+.spacer{flex:1;}
+.wallet-badge{display:flex;align-items:center;gap:0.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-full);padding:4px 12px;font-size:0.8rem;font-family:var(--mono);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--err);flex-shrink:0;}
+.dot.on{background:var(--green);}
+.btn-conn{background:var(--blue);color:#fff;border-radius:var(--r-md);padding:6px 16px;font-size:0.85rem;font-weight:600;}
+.btn-conn:hover{background:var(--blue-h);}
+.theme-btn{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.theme-btn:hover{background:var(--surfoff);color:var(--text);}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1rem 0;overflow-y:auto;position:sticky;top:56px;height:calc(100dvh - 56px);}
+.setup-box{margin:0 1rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:0.75rem;}
+.setup-box label{font-size:0.75rem;color:var(--muted);display:block;margin-bottom:4px;}
+.ca-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;font-size:0.72rem;font-family:var(--mono);color:var(--text);}
+.ca-input:focus{outline:none;border-color:var(--blue);}
+.btn-load{width:100%;margin-top:8px;background:var(--blue);color:#fff;border-radius:var(--r-sm);padding:8px;font-size:0.78rem;font-weight:600;}
+.btn-load:hover{background:var(--blue-h);}
+.cs{margin-top:6px;font-size:0.72rem;text-align:center;}
+.cs.ok{color:var(--teal);}
+.cs.err{color:var(--err);}
+.sid-label{font-size:0.7rem;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:0.08em;padding:0 1.25rem;margin-bottom:6px;}
+.nav-item{display:flex;align-items:center;gap:0.75rem;padding:8px 12px;margin:0 0.5rem;border-radius:var(--r-md);font-size:0.875rem;color:var(--muted);cursor:pointer;width:calc(100% - 1rem);text-align:left;}
+.nav-item:hover{background:var(--surfoff);color:var(--text);}
+.nav-item.active{background:var(--blue-l);color:var(--blue-h);font-weight:600;}
+.sdiv{height:1px;background:var(--divider);margin:0.75rem 1rem;}
+.sinfo{padding:0 1.25rem;font-size:0.75rem;color:var(--faint);line-height:2;}
+
+/* MAIN */
+.main{padding:2rem;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;}
+.ph{margin-bottom:2rem;}
+.ph h1{font-size:clamp(1.5rem,2vw,2rem);font-weight:700;letter-spacing:-0.02em;}
+.ph p{color:var(--muted);font-size:0.9rem;margin-top:4px;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:1.5rem;}
+.ctitle{font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1rem;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-bottom:2rem;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:1.25rem;}
+.kpi-l{font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
+.kpi-v{font-size:clamp(1.5rem,2vw,2.25rem);font-weight:700;font-family:var(--mono);}
+.kpi-v.green{color:var(--teal);}
+.kpi-v.blue{color:var(--blue-h);}
+.kpi-v.purple{color:var(--purple);}
+.kpi-v.yellow{color:var(--warn);}
+.kpi-s{font-size:0.72rem;color:var(--faint);margin-top:4px;}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--r-md);font-size:0.875rem;font-weight:600;cursor:pointer;border:none;transition:all 150ms ease;}
+.btn-p{background:var(--green);color:#fff;}
+.btn-p:hover{background:var(--green-h);}
+.btn-p:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-s:hover{background:var(--surfoff);}
+.btn-d{background:var(--err-l);color:var(--err);border:1px solid var(--err);}
+.btn-d:hover{background:var(--err);color:#fff;}
+.btn-a{background:var(--blue);color:#fff;}
+.btn-a:hover{background:var(--blue-h);}
+.btn-lg{padding:14px 28px;font-size:1rem;}
+.btn-full{width:100%;justify-content:center;}
+
+/* TABLE */
+.tw{overflow-x:auto;border-radius:var(--r-lg);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--surface2);padding:10px 16px;text-align:left;font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);}
+td{padding:10px 16px;font-size:0.875rem;border-bottom:1px solid var(--divider);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.mono{font-family:var(--mono);font-size:0.75rem;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--r-full);font-size:0.72rem;font-weight:600;}
+.bg{background:var(--green-l);color:var(--teal);}
+.bb{background:var(--blue-l);color:var(--blue-h);}
+.by{background:var(--warn-l);color:var(--warn);}
+.br{background:var(--err-l);color:var(--err);}
+.bp{background:var(--purple-l);color:var(--purple);}
+.bgr{background:var(--surfoff);color:var(--muted);}
+
+/* ALERTS */
+.alert{border-radius:var(--r-lg);padding:1rem;font-size:0.875rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:0.75rem;}
+.al-s{background:var(--green-l);border:1px solid var(--green);color:var(--teal);}
+.al-e{background:var(--err-l);border:1px solid var(--err);color:var(--err);}
+.al-i{background:var(--blue-l);border:1px solid var(--blue);color:var(--blue-h);}
+.al-w{background:var(--warn-l);border:1px solid var(--warn);color:var(--warn);}
+
+/* TOAST */
+#toasts{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 20px;font-size:0.875rem;box-shadow:0 12px 32px rgba(0,0,0,.5);animation:sin .3s ease;max-width:360px;}
+.toast.success{border-color:var(--green);color:var(--teal);}
+.toast.error{border-color:var(--err);color:var(--err);}
+.toast.info{border-color:var(--blue);color:var(--blue-h);}
+@keyframes sin{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* SPINNER */
+.spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:rot .6s linear infinite;display:inline-block;}
+@keyframes rot{to{transform:rotate(360deg);}}
+
+/* FORM */
+.fg{margin-bottom:1.25rem;}
+.fl{display:block;font-size:0.875rem;font-weight:600;margin-bottom:6px;}
+.fh{font-size:0.75rem;color:var(--muted);margin-bottom:6px;}
+.fi{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 14px;font-size:0.875rem;color:var(--text);}
+.fi:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,111,235,.15);}
+.fi::placeholder{color:var(--faint);}
+
+/* WINNER */
+.wcard{background:linear-gradient(135deg,var(--green-l),var(--surface));border:1px solid var(--green);border-radius:var(--r-xl);padding:1.5rem;display:flex;align-items:center;gap:1.25rem;margin-bottom:1rem;}
+.wtrophy{font-size:2.5rem;flex-shrink:0;}
+.winfo{flex:1;}
+.wname{font-size:1.25rem;font-weight:700;color:var(--teal);}
+.waddr{font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-top:2px;}
+.wcgpa{font-size:1.75rem;font-weight:700;font-family:var(--mono);}
+.weth{font-size:0.875rem;color:var(--warn);}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;text-align:center;color:var(--muted);}
+.empty-icon{font-size:3rem;margin-bottom:1rem;opacity:.5;}
+.empty h3{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:8px;}
+.empty p{font-size:0.875rem;max-width:36ch;}
+
+@media(max-width:768px){
+body{grid-template-columns:1fr;}
+.sidebar{display:none;}
+.main{padding:1rem;}
+.g2{grid-template-columns:1fr;}
+.kpi-grid{grid-template-columns:1fr 1fr;}
+}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--r-full);}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">
+    <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#238636"/><path d="M14 6L20 9.5V16.5L14 20L8 16.5V9.5L14 6Z" stroke="white" stroke-width="1.5" fill="none"/><circle cx="14" cy="13.5" r="2.5" fill="white"/></svg>
+    ScholarChain
+  </div>
+  <div class="spacer"></div>
+  <div class="wallet-badge"><div class="dot" id="wdot"></div><span id="waddr">Not connected</span></div>
+  <button class="btn-conn" id="btnConn" onclick="connectWallet()">Connect MetaMask</button>
+  <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+    <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
+
+<aside class="sidebar">
+  <div class="setup-box">
+    <label>Contract Address</label>
+    <input class="ca-input" id="caInput" type="text" placeholder="0x..." value="0x3f6bAC785D26761A5ee535D9Fc8707dcDcF9C9d7">
+    <button class="btn-load" onclick="loadContract()">⚡ Load Contract</button>
+    <div class="cs" id="cStatus"></div>
+  </div>
+  <div class="sdiv"></div>
+  <div class="sid-label">Navigation</div>
+  <button class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+  </button>
+  <button class="nav-item" onclick="showPage('admin')" id="nav-admin">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>Admin Panel
+  </button>
+  <button class="nav-item" onclick="showPage('student')" id="nav-student">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Student Apply
+  </button>
+  <button class="nav-item" onclick="showPage('verifier')" id="nav-verifier">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>Verifier Panel
+  </button>
+  <button class="nav-item" onclick="showPage('results')" id="nav-results">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Results
+  </button>
+  <div class="sdiv"></div>
+  <div class="sid-label">Contract Info</div>
+  <div class="sinfo">
+    Min CGPA: <span id="sMCGPA" style="color:var(--muted)">—</span><br>
+    Scholarship: <span id="sAmt" style="color:var(--warn)">—</span><br>
+    Window: <span id="sWin" style="color:var(--muted)">—</span><br>
+    Selection: <span id="sSel" style="color:var(--muted)">—</span>
+  </div>
+</aside>
+
+<main class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="ph"><h1>Dashboard</h1><p>Scholarship program overview</p></div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-l">Total Applicants</div><div class="kpi-v blue" id="kT">—</div><div class="kpi-s">Submitted</div></div>
+    <div class="kpi"><div class="kpi-l">Verified</div><div class="kpi-v green" id="kV">—</div><div class="kpi-s">2/3 confirmed</div></div>
+    <div class="kpi"><div class="kpi-l">Selected</div><div class="kpi-v purple" id="kS">—</div><div class="kpi-s">Top 10%</div></div>
+    <div class="kpi"><div class="kpi-l">Contract Balance</div><div class="kpi-v yellow" id="kB">—</div><div class="kpi-s">ETH remaining</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">Contract Details</div>
+      <table>
+        <tr><td style="color:var(--muted);font-size:.8rem;width:130px">Admin</td><td class="mono" id="dAdmin">—</td></tr>
+        <tr><td style="color:var(--muted);font-size:.8rem">Min CGPA</td><td id="dMCGPA">—</td></tr>
+        <tr><td style="color:var(--muted);font-size:.8rem">Per Student</td><td id="dAmt">—</td></tr>
+        <tr><td style="color:var(--muted);font-size:.8rem">Window</td><td id="dWin">—</td></tr>
+        <tr><td style="color:var(--muted);font-size:.8rem">Selection</td><td id="dSel">—</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="ctitle">Applicants</div>
+      <div id="dAppList"><div class="empty"><div class="empty-icon">📋</div><h3>No data</h3><p>Load contract to see applicants</p></div></div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;text-align:right"><button class="btn btn-s" onclick="refreshDashboard()">🔄 Refresh</button></div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+  <div class="ph"><h1>Admin Panel</h1><p>Manage application window and run scholarship selection</p></div>
+  <div id="adminAlert" class="alert al-w" style="display:none">⚠️ Connected wallet is not the admin. Switch to Admin account in MetaMask.</div>
+  <div class="g2" style="margin-bottom:1.5rem">
+    <div class="card">
+      <div class="ctitle">Step 1 — Close Window</div>
+      <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.7">Close the application window to stop new applications. Required before running selection.</p>
+      <div id="winBadge" style="margin-bottom:1rem"></div>
+      <button class="btn btn-d btn-full btn-lg" id="btnCW" onclick="closeWindow()">🔒 Close Application Window</button>
+    </div>
+    <div class="card">
+      <div class="ctitle">Step 2 — Run Selection</div>
+      <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.7">Automatically selects top 10% of verified applicants by CGPA and sends ETH to their wallets.</p>
+      <div id="selBadge" style="margin-bottom:1rem"></div>
+      <button class="btn btn-p btn-full btn-lg" id="btnRS" onclick="runSelection()">🚀 Run Selection & Distribute ETH</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Registered Verifiers</div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Address</th><th>Role</th></tr></thead><tbody id="vTable"><tr><td colspan="3" style="text-align:center;color:var(--faint);padding:2rem">Load contract to see verifiers</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<!-- STUDENT -->
+<div class="page" id="page-student">
+  <div class="ph"><h1>Student Application</h1><p>Submit your CGPA to apply for the scholarship</p></div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">Apply for Scholarship</div>
+      <div class="alert al-i" style="margin-bottom:1.25rem">ℹ️ Enter CGPA × 100. Example: CGPA 8.75 → type <strong>875</strong></div>
+      <div class="fg">
+        <label class="fl">Your CGPA (×100)</label>
+        <div class="fh">Minimum: <span id="minHint">700</span> (7.00 CGPA)</div>
+        <input class="fi" type="number" id="sCGPA" placeholder="e.g. 875 for CGPA 8.75" min="100" max="1000">
+      </div>
+      <div id="appStatus" style="margin-bottom:1rem"></div>
+      <button class="btn btn-p btn-full btn-lg" onclick="submitApplication()">📤 Submit Application</button>
+    </div>
+    <div class="card">
+      <div class="ctitle">Check Application Status</div>
+      <div class="fg">
+        <label class="fl">Student Address</label>
+        <input class="fi" type="text" id="checkAddr" placeholder="0x... (blank = your wallet)">
+      </div>
+      <button class="btn btn-s btn-full" onclick="checkApplication()" style="margin-bottom:1rem">🔍 Check Status</button>
+      <div id="checkResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VERIFIER -->
+<div class="page" id="page-verifier">
+  <div class="ph"><h1>Verifier Panel</h1><p>Confirm or reject student CGPA authenticity</p></div>
+  <div id="verAlert" class="alert al-w" style="display:none">⚠️ Connected wallet is not a registered verifier. Switch to a Verifier account in MetaMask.</div>
+  <div class="alert al-i" style="margin-bottom:1.5rem">ℹ️ Each verifier can act on each student <strong>only once</strong>. Student needs <strong>2 out of 3</strong> confirmations to be verified.</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="ctitle" style="margin:0">All Applicants</div>
+      <button class="btn btn-s" onclick="loadVerifier()">🔄 Refresh</button>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>Address</th><th>CGPA</th><th>Confirms</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="verTable"><tr><td colspan="6" style="text-align:center;color:var(--faint);padding:2rem">Refresh to load applicants</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="page" id="page-results">
+  <div class="ph"><h1>Results</h1><p>Scholarship winners and ETH distribution</p></div>
+  <div id="resultsTop"><div class="empty"><div class="empty-icon">🏆</div><h3>Results not available yet</h3><p>Admin must run selection first</p></div></div>
+  <div class="card" style="margin-top:1.5rem">
+    <div class="ctitle">Full Report — All Applicants</div>
+    <div class="tw"><table>
+      <thead><tr><th>Rank</th><th>Address</th><th>CGPA</th><th>Confirms</th><th>Verified</th><th>Selected</th><th>ETH Sent</th></tr></thead>
+      <tbody id="fullTable"><tr><td colspan="7" style="text-align:center;color:var(--faint);padding:2rem">Load contract to see data</td></tr></tbody>
+    </table></div>
+  </div>
+  <div style="margin-top:1rem;text-align:right"><button class="btn btn-s" onclick="loadResults()">🔄 Refresh Results</button></div>
+</div>
+
+</main>
+<div id="toasts"></div>
+
+<script>
+const ABI=[{"inputs":[{"internalType":"address[3]","name":"_verifiers","type":"address[3]"},{"internalType":"uint256","name":"_minCGPA","type":"uint256"},{"internalType":"uint256","name":"_scholarshipAmount","type":"uint256"},{"internalType":"uint256","name":"_durationSeconds","type":"uint256"}],"stateMutability":"payable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"student","type":"address"},{"indexed":false,"internalType":"uint256","name":"cgpa","type":"uint256"}],"name":"Applied","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"student","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"ScholarshipPaid","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address[]","name":"selected","type":"address[]"}],"name":"SelectionDone","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"verifier","type":"address"},{"indexed":true,"internalType":"address","name":"student","type":"address"},{"indexed":false,"internalType":"bool","name":"confirmed","type":"bool"}],"name":"Verified","type":"event"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"applicantList","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"applicationDeadline","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"applications","outputs":[{"internalType":"address","name":"student","type":"address"},{"internalType":"uint256","name":"cgpa","type":"uint256"},{"internalType":"bool","name":"exists","type":"bool"},{"internalType":"uint8","name":"confirmations","type":"uint8"},{"internalType":"uint8","name":"rejections","type":"uint8"},{"internalType":"bool","name":"verified","type":"bool"},{"internalType":"bool","name":"selected","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"closeWindow","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"contractBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getApplicants","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_student","type":"address"}],"name":"getApplicationDetails","outputs":[{"internalType":"uint256","name":"cgpa","type":"uint256"},{"internalType":"bool","name":"verified","type":"bool"},{"internalType":"bool","name":"selected","type":"bool"},{"internalType":"uint8","name":"confirmations","type":"uint8"},{"internalType":"uint8","name":"rejections","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"minCGPA","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"runSelection","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"scholarshipAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"selectionDone","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_cgpa","type":"uint256"}],"name":"submitApplication","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"verifiers","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_student","type":"address"},{"internalType":"bool","name":"_confirm","type":"bool"}],"name":"verifyStudent","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"windowClosed","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"stateMutability":"payable","type":"receive"}];
+
+let web3,contract,account;
+
+function toggleTheme(){
+  const r=document.documentElement,d=r.getAttribute('data-theme')==='dark'?'light':'dark';
+  r.setAttribute('data-theme',d);
+  document.getElementById('themeIcon').innerHTML=d==='dark'
+    ?'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+    :'<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+}
+
+function toast(msg,type='info'){
+  const c=document.getElementById('toasts'),t=document.createElement('div');
+  t.className='toast '+type;t.textContent=msg;c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},3500);
+}
+
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  document.getElementById('nav-'+n).classList.add('active');
+  if(n==='verifier')loadVerifier();
+  if(n==='results')loadResults();
+  if(n==='dashboard')refreshDashboard();
+  if(n==='admin')refreshDashboard();
+}
+
+async function connectWallet(){
+  if(!window.ethereum){toast('Install MetaMask first!','error');return;}
+  try{
+    web3=new Web3(window.ethereum);
+    const accs=await window.ethereum.request({method:'eth_requestAccounts'});
+    account=accs[0];
+    document.getElementById('wdot').classList.add('on');
+    document.getElementById('waddr').textContent=account.slice(0,6)+'...'+account.slice(-4);
+    document.getElementById('btnConn').textContent='✅ Connected';
+    document.getElementById('btnConn').style.background='var(--green)';
+    toast('Connected: '+account.slice(0,8)+'...','success');
+    if(document.getElementById('caInput').value)loadContract();
+    window.ethereum.on('accountsChanged',a=>{account=a[0];document.getElementById('waddr').textContent=account.slice(0,6)+'...'+account.slice(-4);toast('Switched to '+account.slice(0,8)+'...','info');});
+  }catch(e){toast('Connection rejected','error');}
+}
+
+async function loadContract(){
+  const addr=document.getElementById('caInput').value.trim();
+  if(!addr){toast('Enter contract address','error');return;}
+  if(!web3){if(!window.ethereum){toast('Install MetaMask','error');return;}web3=new Web3(window.ethereum);try{const a=await window.ethereum.request({method:'eth_requestAccounts'});account=a[0];}catch(e){}}
+  try{
+    contract=new web3.eth.Contract(ABI,addr);
+    await contract.methods.admin().call();
+    document.getElementById('cStatus').textContent='✅ Loaded!';document.getElementById('cStatus').className='cs ok';
+    toast('Contract connected!','success');refreshDashboard();
+  }catch(e){document.getElementById('cStatus').textContent='❌ Invalid';document.getElementById('cStatus').className='cs err';toast('Failed: '+e.message,'error');}
+}
+
+async function refreshDashboard(){
+  if(!contract)return;
+  try{
+    const[admin,mc,sa,wc,sd,bal,apps]=await Promise.all([
+      contract.methods.admin().call(),contract.methods.minCGPA().call(),contract.methods.scholarshipAmount().call(),
+      contract.methods.windowClosed().call(),contract.methods.selectionDone().call(),
+      contract.methods.contractBalance().call(),contract.methods.getApplicants().call()
+    ]);
+    const ae=web3.utils.fromWei(sa,'ether'),be=web3.utils.fromWei(bal,'ether');
+    document.getElementById('dAdmin').textContent=admin.slice(0,10)+'...'+admin.slice(-6);
+    document.getElementById('dMCGPA').textContent=(mc/100).toFixed(2)+' CGPA';
+    document.getElementById('dAmt').textContent=ae+' ETH';
+    document.getElementById('dWin').innerHTML=wc?'<span class="badge br">Closed</span>':'<span class="badge bg">Open</span>';
+    document.getElementById('dSel').innerHTML=sd?'<span class="badge bp">✅ Done</span>':'<span class="badge by">Pending</span>';
+    document.getElementById('kT').textContent=apps.length;document.getElementById('kB').textContent=parseFloat(be).toFixed(4)+' ETH';
+    document.getElementById('sMCGPA').textContent=(mc/100).toFixed(2);document.getElementById('sAmt').textContent=ae+' ETH';
+    document.getElementById('sWin').textContent=wc?'Closed':'Open';document.getElementById('sSel').textContent=sd?'Done':'Pending';
+    document.getElementById('minHint').textContent=mc;
+    document.getElementById('winBadge').innerHTML=wc?'<span class="badge br">Window CLOSED</span>':'<span class="badge bg">Window OPEN</span>';
+    document.getElementById('selBadge').innerHTML=sd?'<span class="badge bp">Already done</span>':'<span class="badge by">Not yet run</span>';
+    let v=0,s=0,rows='';
+    for(const a of apps){const d=await contract.methods.getApplicationDetails(a).call();if(d.verified)v++;if(d.selected)s++;rows+=`<tr><td class="mono">${a.slice(0,8)}...${a.slice(-6)}</td><td><strong>${(d.cgpa/100).toFixed(2)}</strong></td><td>${d.selected?'<span class="badge bp">🏆 Selected</span>':d.verified?'<span class="badge bg">✅ Verified</span>':'<span class="badge by">⏳ Pending</span>'}</td></tr>`;}
+    document.getElementById('kV').textContent=v;document.getElementById('kS').textContent=s;
+    document.getElementById('dAppList').innerHTML=apps.length?`<div class="tw"><table><thead><tr><th>Address</th><th>CGPA</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">📋</div><h3>No applicants yet</h3></div>';
+    let vr='';for(let i=0;i<3;i++){try{const v=await contract.methods.verifiers(i).call();vr+=`<tr><td>${i+1}</td><td class="mono">${v}</td><td><span class="badge bb">Verifier ${i+1}</span></td></tr>`;}catch(e){}}
+    document.getElementById('vTable').innerHTML=vr||'<tr><td colspan="3" style="text-align:center;color:var(--faint);padding:1rem">No verifiers found</td></tr>';
+    if(account&&admin.toLowerCase()!==account.toLowerCase())document.getElementById('adminAlert').style.display='flex';
+    else document.getElementById('adminAlert').style.display='none';
+  }catch(e){toast('Dashboard error: '+e.message,'error');}
+}
+
+async function closeWindow(){
+  if(!contract||!account){toast('Connect wallet first','error');return;}
+  const b=document.getElementById('btnCW');b.innerHTML='<span class="spin"></span> Closing...';b.disabled=true;
+  try{await contract.methods.closeWindow().send({from:account,gas:100000});toast('Window closed!','success');refreshDashboard();}
+  catch(e){toast('Error: '+e.message,'error');}
+  b.innerHTML='🔒 Close Application Window';b.disabled=false;
+}
+
+async function runSelection(){
+  if(!contract||!account){toast('Connect wallet first','error');return;}
+  const b=document.getElementById('btnRS');b.innerHTML='<span class="spin"></span> Running...';b.disabled=true;
+  try{await contract.methods.runSelection().send({from:account,gas:3000000});toast('🎉 Selection done! ETH distributed!','success');refreshDashboard();setTimeout(()=>showPage('results'),1500);}
+  catch(e){toast('Error: '+e.message,'error');}
+  b.innerHTML='🚀 Run Selection & Distribute ETH';b.disabled=false;
+}
+
+async function submitApplication(){
+  if(!contract||!account){toast('Connect MetaMask first','error');return;}
+  const c=document.getElementById('sCGPA').value;
+  if(!c||c<100||c>1000){toast('Enter valid CGPA (100-1000)','error');return;}
+  const s=document.getElementById('appStatus');s.innerHTML='<div class="alert al-i"><span class="spin"></span> Submitting...</div>';
+  try{await contract.methods.submitApplication(parseInt(c)).send({from:account,gas:300000});s.innerHTML='<div class="alert al-s">✅ Application submitted! Awaiting verifier confirmation.</div>';toast('Application submitted!','success');}
+  catch(e){s.innerHTML='<div class="alert al-e">❌ '+e.message+'</div>';toast('Error: '+e.message,'error');}
+}
+
+async function checkApplication(){
+  if(!contract)return;
+  const addr=document.getElementById('checkAddr').value.trim()||account;
+  if(!addr){toast('Connect wallet or enter address','error');return;}
+  const r=document.getElementById('checkResult');r.innerHTML='<span class="spin"></span>';
+  try{
+    const d=await contract.methods.getApplicationDetails(addr).call();
+    if(!d.cgpa||d.cgpa=='0'){r.innerHTML='<div class="alert al-w">No application found.</div>';return;}
+    r.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem"><div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+      <div><div style="font-size:.72rem;color:var(--muted)">CGPA</div><div style="font-size:1.5rem;font-weight:700;font-family:var(--mono)">${(d.cgpa/100).toFixed(2)}</div></div>
+      <div><div style="font-size:.72rem;color:var(--muted)">Confirmations</div><div style="font-size:1.5rem;font-weight:700;font-family:var(--mono)">${d.confirmations}/3</div></div>
+      <div><div style="font-size:.72rem;color:var(--muted)">Verified</div>${d.verified?'<span class="badge bg">✅ Yes</span>':'<span class="badge by">⏳ No</span>'}</div>
+      <div><div style="font-size:.72rem;color:var(--muted)">Selected</div>${d.selected?'<span class="badge bp">🏆 Yes</span>':'<span class="badge bgr">Not yet</span>'}</div>
+    </div></div>`;
+  }catch(e){r.innerHTML='<div class="alert al-e">Error: '+e.message+'</div>';}
+}
+
+async function loadVerifier(){
+  if(!contract)return;
+  const tb=document.getElementById('verTable');tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:1.5rem"><span class="spin"></span></td></tr>';
+  try{
+    const apps=await contract.methods.getApplicants().call();
+    if(!apps.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--faint);padding:2rem">No applicants yet</td></tr>';return;}
+    let rows='';
+    for(let i=0;i<apps.length;i++){
+      const a=apps[i],d=await contract.methods.getApplicationDetails(a).call();
+      const st=d.selected?'<span class="badge bp">🏆 Selected</span>':d.verified?'<span class="badge bg">✅ Verified</span>':`<span class="badge by">⏳ ${d.confirmations}/2</span>`;
+      rows+=`<tr><td>${i+1}</td><td><div class="mono">${a.slice(0,12)}...${a.slice(-6)}</div><div class="mono" style="color:var(--faint);font-size:.65rem">${a}</div></td><td><strong>${(d.cgpa/100).toFixed(2)}</strong></td><td><span class="badge bb">${d.confirmations}/3</span></td><td>${st}</td><td><div style="display:flex;gap:6px"><button class="btn btn-p" style="padding:4px 10px;font-size:.75rem" onclick="verifyS('${a}',true)">✅ Confirm</button><button class="btn btn-d" style="padding:4px 10px;font-size:.75rem" onclick="verifyS('${a}',false)">❌ Reject</button></div></td></tr>`;
+    }
+    tb.innerHTML=rows;
+    if(account){let iv=false;for(let i=0;i<3;i++){try{const v=await contract.methods.verifiers(i).call();if(v.toLowerCase()===account.toLowerCase())iv=true;}catch(e){}}document.getElementById('verAlert').style.display=iv?'none':'flex';}
+  }catch(e){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--err);padding:1rem">'+e.message+'</td></tr>';}
+}
+
+async function verifyS(addr,confirm){
+  if(!contract||!account){toast('Connect wallet first','error');return;}
+  toast((confirm?'Confirming':'Rejecting')+'...','info');
+  try{await contract.methods.verifyStudent(addr,confirm).send({from:account,gas:200000});toast(confirm?'✅ Confirmed!':'❌ Rejected!',confirm?'success':'error');loadVerifier();}
+  catch(e){toast('Error: '+e.message,'error');}
+}
+
+async function loadResults(){
+  if(!contract)return;
+  try{
+    const[sd,apps,sa]=await Promise.all([contract.methods.selectionDone().call(),contract.methods.getApplicants().call(),contract.methods.scholarshipAmount().call()]);
+    const ae=web3.utils.fromWei(sa,'ether');
+    const all=[];for(const a of apps){const d=await contract.methods.getApplicationDetails(a).call();all.push({a,cgpa:parseInt(d.cgpa),v:d.verified,s:d.selected,c:d.confirmations});}
+    all.sort((x,y)=>y.cgpa-x.cgpa);
+    const winners=all.filter(x=>x.s);
+    const rt=document.getElementById('resultsTop');
+    if(!sd||!winners.length){rt.innerHTML='<div class="empty"><div class="empty-icon">⏳</div><h3>Selection not yet run</h3><p>Admin must close window and run selection</p></div>';}
+    else{rt.innerHTML=`<div class="alert al-s" style="margin-bottom:1.5rem">🎉 Selection complete! ${winners.length} student${winners.length>1?'s':''} received ${ae} ETH each automatically!</div>`+winners.map((w,i)=>`<div class="wcard"><div class="wtrophy">${i===0?'🥇':i===1?'🥈':'🥉'}</div><div class="winfo"><div class="wname">Scholar #${i+1}</div><div class="waddr">${w.a}</div></div><div style="text-align:right"><div class="wcgpa">${(w.cgpa/100).toFixed(2)}</div><div class="weth">+${ae} ETH sent ✅</div></div></div>`).join('');}
+    document.getElementById('fullTable').innerHTML=all.length?all.map((x,i)=>`<tr><td>${i+1}</td><td class="mono">${x.a.slice(0,10)}...${x.a.slice(-6)}</td><td><strong>${(x.cgpa/100).toFixed(2)}</strong></td><td>${x.c}/3</td><td>${x.v?'<span class="badge bg">✅</span>':'<span class="badge bgr">No</span>'}</td><td>${x.s?'<span class="badge bp">🏆 Yes</span>':'<span class="badge bgr">No</span>'}</td><td>${x.s?`<span style="color:var(--warn);font-family:var(--mono)">${ae} ETH</span>`:'<span style="color:var(--faint)">—</span>'}</td></tr>`).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--faint);padding:2rem">No data</td></tr>';
+  }catch(e){toast('Results error: '+e.message,'error');}
+}
+
+window.addEventListener('load',async()=>{
+  if(window.ethereum){
+    web3=new Web3(window.ethereum);
+    try{const a=await window.ethereum.request({method:'eth_accounts'});if(a.length){account=a[0];document.getElementById('wdot').classList.add('on');document.getElementById('waddr').textContent=account.slice(0,6)+'...'+account.slice(-4);document.getElementById('btnConn').textContent='✅ Connected';document.getElementById('btnConn').style.background='var(--green)';loadContract();}}catch(e){}
+    window.ethereum.on('accountsChanged',a=>{if(a.length){account=a[0];document.getElementById('waddr').textContent=account.slice(0,6)+'...'+account.slice(-4);toast('Switched to '+account.slice(0,8)+'...','info');}});
+  }
+});
+</script>
+</body>
+</html>
