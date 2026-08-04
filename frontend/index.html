@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScholarChain — Decentralized Scholarship System</title>
+<meta name="description" content="Blockchain-based scholarship platform with multi-verifier consensus and automatic ETH distribution">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">
+    <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#238636"/><path d="M14 6L20 9.5V16.5L14 20L8 16.5V9.5L14 6Z" stroke="white" stroke-width="1.5" fill="none"/><circle cx="14" cy="13.5" r="2.5" fill="white"/></svg>
+    ScholarChain
+  </div>
+  <div class="spacer"></div>
+  <div class="wallet-badge"><div class="dot" id="wdot"></div><span id="waddr">Not connected</span></div>
+  <button class="btn-conn" id="btnConn" onclick="connectWallet()">Connect MetaMask</button>
+  <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+    <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
+
+<aside class="sidebar">
+  <div class="setup-box">
+    <label>Contract Address</label>
+    <input class="ca-input" id="caInput" type="text" placeholder="0x..." value="">
+    <button class="btn-load" onclick="loadContract()">⚡ Load Contract</button>
+    <div class="cs" id="cStatus"></div>
+  </div>
+  <div class="sdiv"></div>
+  <div class="sid-label">Navigation</div>
+  <button class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+  </button>
+  <button class="nav-item" onclick="showPage('admin')" id="nav-admin">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>Admin Panel
+  </button>
+  <button class="nav-item" onclick="showPage('student')" id="nav-student">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Student Apply
+  </button>
+  <button class="nav-item" onclick="showPage('verifier')" id="nav-verifier">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>Verifier Panel
+  </button>
+  <button class="nav-item" onclick="showPage('results')" id="nav-results">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Results
+  </button>
+  <div class="sdiv"></div>
+  <div class="sid-label">Contract Info</div>
+  <div class="sinfo">
+    Min CGPA: <span id="sMCGPA" style="color:var(--muted)">—</span><br>
+    Scholarship: <span id="sAmt" style="color:var(--warn)">—</span><br>
+    Window: <span id="sWin" style="color:var(--muted)">—</span><br>
+    Selection: <span id="sSel" style="color:var(--muted)">—</span>
+  </div>
+</aside>
+
+<main class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="ph"><h1>Dashboard</h1><p>Scholarship program overview</p></div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-l">Total Applicants</div><div class="kpi-v blue" id="kT">—</div><div class="kpi-s">Submitted</div></div>
+    <div class="kpi"><div class="kpi-l">Verified</div><div class="kpi-v green" id="kV">—</div><div class="kpi-s">2/3 confirmed</div></div>
+    <div class="kpi"><div class="kpi-l">Selected</div><div class="kpi-v purple" id="kS">—</div><div class="kpi-s">Top 10%</div></div>
+    <div class="kpi"><div class="kpi-l">Contract Balance</div><div class="kpi-v yellow" id="kB">—</div><div class="kpi-s">ETH remaining</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">Contract Details</div>
+      <table>
+        <tr><td style="color:var(--muted);font-size:.8rem;width:130px">Admin</td><td class="mono" id="dAdmin">—</td></tr>
+        <tr><td style="color:var(--muted);font-size:.8rem">Min CGPA</td><td id="dMCGPA">—</td></tr>
+        <tr><td style="color:var(--muted);font-size:.8rem">Per Student</td><td id="dAmt">—</td></tr>
+        <tr><td style="color:var(--muted);font-size:.8rem">Window</td><td id="dWin">—</td></tr>
+        <tr><td style="color:var(--muted);font-size:.8rem">Selection</td><td id="dSel">—</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="ctitle">Applicants</div>
+      <div id="dAppList"><div class="empty"><div class="empty-icon">📋</div><h3>No data</h3><p>Load contract to see applicants</p></div></div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;text-align:right"><button class="btn btn-s" onclick="refreshDashboard()">🔄 Refresh</button></div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+  <div class="ph"><h1>Admin Panel</h1><p>Manage application window and run scholarship selection</p></div>
+  <div id="adminAlert" class="alert al-w" style="display:none">⚠️ Connected wallet is not the admin. Switch to Admin account in MetaMask.</div>
+  <div class="g2" style="margin-bottom:1.5rem">
+    <div class="card">
+      <div class="ctitle">Step 1 — Close Window</div>
+      <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.7">Close the application window to stop new applications. Required before running selection.</p>
+      <div id="winBadge" style="margin-bottom:1rem"></div>
+      <button class="btn btn-d btn-full btn-lg" id="btnCW" onclick="closeWindow()">🔒 Close Application Window</button>
+    </div>
+    <div class="card">
+      <div class="ctitle">Step 2 — Run Selection</div>
+      <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.7">Automatically selects top 10% of verified applicants by CGPA and sends ETH to their wallets.</p>
+      <div id="selBadge" style="margin-bottom:1rem"></div>
+      <button class="btn btn-p btn-full btn-lg" id="btnRS" onclick="runSelection()">🚀 Run Selection & Distribute ETH</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Registered Verifiers</div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Address</th><th>Role</th></tr></thead><tbody id="vTable"><tr><td colspan="3" style="text-align:center;color:var(--faint);padding:2rem">Load contract to see verifiers</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<!-- STUDENT -->
+<div class="page" id="page-student">
+  <div class="ph"><h1>Student Application</h1><p>Submit your CGPA to apply for the scholarship</p></div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">Apply for Scholarship</div>
+      <div class="alert al-i" style="margin-bottom:1.25rem">ℹ️ Enter CGPA × 100. Example: CGPA 8.75 → type <strong>875</strong></div>
+      <div class="fg">
+        <label class="fl">Your CGPA (×100)</label>
+        <div class="fh">Minimum: <span id="minHint">700</span> (7.00 CGPA)</div>
+        <input class="fi" type="number" id="sCGPA" placeholder="e.g. 875 for CGPA 8.75" min="100" max="1000">
+      </div>
+      <div id="appStatus" style="margin-bottom:1rem"></div>
+      <button class="btn btn-p btn-full btn-lg" onclick="submitApplication()">📤 Submit Application</button>
+    </div>
+    <div class="card">
+      <div class="ctitle">Check Application Status</div>
+      <div class="fg">
+        <label class="fl">Student Address</label>
+        <input class="fi" type="text" id="checkAddr" placeholder="0x... (blank = your wallet)">
+      </div>
+      <button class="btn btn-s btn-full" onclick="checkApplication()" style="margin-bottom:1rem">🔍 Check Status</button>
+      <div id="checkResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VERIFIER -->
+<div class="page" id="page-verifier">
+  <div class="ph"><h1>Verifier Panel</h1><p>Confirm or reject student CGPA authenticity</p></div>
+  <div id="verAlert" class="alert al-w" style="display:none">⚠️ Connected wallet is not a registered verifier. Switch to a Verifier account in MetaMask.</div>
+  <div class="alert al-i" style="margin-bottom:1.5rem">ℹ️ Each verifier can act on each student <strong>only once</strong>. Student needs <strong>2 out of 3</strong> confirmations to be verified.</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="ctitle" style="margin:0">All Applicants</div>
+      <button class="btn btn-s" onclick="loadVerifier()">🔄 Refresh</button>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>Address</th><th>CGPA</th><th>Confirms</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="verTable"><tr><td colspan="6" style="text-align:center;color:var(--faint);padding:2rem">Refresh to load applicants</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="page" id="page-results">
+  <div class="ph"><h1>Results</h1><p>Scholarship winners and ETH distribution</p></div>
+  <div id="resultsTop"><div class="empty"><div class="empty-icon">🏆</div><h3>Results not available yet</h3><p>Admin must run selection first</p></div></div>
+  <div class="card" style="margin-top:1.5rem">
+    <div class="ctitle">Full Report — All Applicants</div>
+    <div class="tw"><table>
+      <thead><tr><th>Rank</th><th>Address</th><th>CGPA</th><th>Confirms</th><th>Verified</th><th>Selected</th><th>ETH Sent</th></tr></thead>
+      <tbody id="fullTable"><tr><td colspan="7" style="text-align:center;color:var(--faint);padding:2rem">Load contract to see data</td></tr></tbody>
+    </table></div>
+  </div>
+  <div style="margin-top:1rem;text-align:right"><button class="btn btn-s" onclick="loadResults()">🔄 Refresh Results</button></div>
+</div>
+
+</main>
+<div id="toasts"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
